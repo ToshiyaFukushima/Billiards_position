@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>9ft Billiards Layout Editor</title>
+  <title>9ft Billiards Layout with Grid</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
@@ -13,10 +13,10 @@
     .table-frame {
       width: 95vw;
       max-width: 700px;
-      aspect-ratio: 2.2 / 1.2;
+      aspect-ratio: 2.2 / 1.2; /* 枠を含めた全体の比率 */
       background: #3a2212;
       border-radius: 12px;
-      padding: 3%;
+      padding: 4.5% 2.5%; /* クッション幅の調整 */
       position: relative;
       box-shadow: 0 8px 20px rgba(0,0,0,0.6);
       display: flex;
@@ -30,68 +30,85 @@
       height: 100%;
       background: #0d6b38;
       position: relative;
-      border: 8px solid #24140a;
+      border: 4px solid #24140a; /* クッションの角 */
       box-shadow: inset 0 0 12px rgba(0,0,0,0.6);
+      /* ボールがはみ出さないように */
+      overflow: hidden; 
+    }
+
+    /* 格子（グリッド） */
+    .grid-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; /* ボールのドラッグを邪魔しない */
+      background-size: calc(100% / 8) calc(100% / 4);
+      background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
+      /* ヘッドラインとフットラインを強調 */
+      border-left: calc(100% / 4) solid transparent;
+      border-right: calc(100% / 4) solid transparent;
+    }
+
+    /* ダイヤ（ポイント）の配置エリア */
+    #diamonds-container {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    /* ダイヤ（ポイント） */
+    .diamond {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #d4af37; /* ゴールド */
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 2px rgba(0,0,0,0.8);
+      z-index: 1;
     }
 
     /* ヘッドライン（破線） */
     .headline {
       position: absolute;
-      left: 25%;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      border-left: 1px dashed rgba(255,255,255,0.25);
+      left: 25%; top: 0; bottom: 0; width: 1px;
+      border-left: 1px dashed rgba(255,255,255,0.3);
       pointer-events: none;
+      z-index: 2;
     }
 
     /* フットスポット */
     .foot-spot {
       position: absolute;
-      left: 75%;
-      top: 50%;
-      width: 6px;
-      height: 6px;
-      background: rgba(255,255,255,0.5);
+      left: 75%; top: 50%; width: 8px; height: 8px;
+      background: rgba(255,255,255,0.6);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
+      z-index: 2;
     }
 
     /* ポケット */
-    .pocket { position: absolute; background: #111; border-radius: 50%; box-shadow: inset 0 0 5px #000; }
-    .pocket.corner { width: 7%; height: 14%; }
-    .pocket.side { width: 6.5%; height: 11%; }
-    .p-tl { top: -2%; left: -2%; }
-    .p-tr { top: -2%; right: -2%; }
-    .p-bl { bottom: -2%; left: -2%; }
-    .p-br { bottom: -2%; right: -2%; }
-    .p-tc { top: -4%; left: 50%; transform: translateX(-50%); }
-    .p-bc { bottom: -4%; left: 50%; transform: translateX(-50%); }
+    .pocket { position: absolute; background: #111; border-radius: 50%; box-shadow: inset 0 0 8px #000; z-index: 5;}
+    .pocket.corner { width: 9%; height: 17%; }
+    .pocket.side { width: 8%; height: 13%; }
+    .p-tl { top: -4%; left: -3%; }
+    .p-tr { top: -4%; right: -3%; }
+    .p-bl { bottom: -4%; left: -3%; }
+    .p-br { bottom: -4%; right: -3%; }
+    .p-tc { top: -6%; left: 50%; transform: translateX(-50%); }
+    .p-bc { bottom: -6%; left: 50%; transform: translateX(-50%); }
 
-    /* ポイント（ダイヤ） */
-    .diamond { position: absolute; width: 5px; height: 5px; background: #d4af37; border-radius: 50%; opacity: 0.8; }
-
-    /* ボールの基本設計 */
+    /* ボール */
     .ball {
-      width: 5.5%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      position: absolute;
-      transform: translate(-50%, -50%);
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 0.75rem;
-      user-select: none;
-      box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-      z-index: 10;
+      width: 5.5%; aspect-ratio: 1; border-radius: 50%; position: absolute;
+      transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.75rem; user-select: none; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); z-index: 10;
     }
     .ball:active { cursor: grabbing; scale: 1.1; }
 
-    /* ボールデザイン（1〜15番＋手球） */
+    /* ボールデザイン */
     .b-0 { background: #ffffff; color: #000; }
     .b-1 { background: #f1c40f; color: #000; }
     .b-2 { background: #2980b9; color: #fff; }
@@ -103,40 +120,11 @@
     .b-8 { background: #111111; color: #fff; border: 1px solid #444; }
     .b-9 { background: repeating-linear-gradient(0deg, #f1c40f, #f1c40f 35%, #fff 35%, #fff 65%, #f1c40f 65%); color: #000; }
 
-    /* ボールラック（テーブル外の待機スペース） */
-    .rack-container {
-      margin-top: 15px;
-      width: 95vw;
-      max-width: 700px;
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 10px;
-      box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-    }
+    /* ボールラック */
+    .rack-container { margin-top: 15px; width: 95vw; max-width: 700px; background: #222; border: 1px solid #444; border-radius: 8px; padding: 10px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
     .rack-title { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-align: center; }
-    #ball-rack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      min-height: 40px;
-      align-items: center;
-    }
-
-    .rack-ball {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 0.75rem;
-      cursor: pointer;
-      box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
-      user-select: none;
-    }
+    #ball-rack { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; align-items: center; }
+    .rack-ball { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
 
     .controls { margin-top: 15px; display: flex; gap: 10px; }
     button { padding: 10px 18px; font-size: 0.85rem; border: none; border-radius: 5px; background: #27ae60; color: white; cursor: pointer; font-weight: bold; }
@@ -145,11 +133,16 @@
 </head>
 <body>
 
-  <h1>9ft ポケットビリヤード配置エディタ</h1>
+  <h1>9ft Billiards Layout with Grid</h1>
 
-  <!-- 9ft テーブル本体 -->
   <div class="table-frame" id="table-frame">
+    <!-- ダイヤを表示するコンテナ（ラシャの外側、木枠の上） -->
+    <div id="diamonds-container"></div>
+
     <div id="table-canvas">
+      <!-- 格子（グリッド）オーバーレイ -->
+      <div class="grid-overlay"></div>
+
       <!-- ライン・スポット -->
       <div class="headline"></div>
       <div class="foot-spot"></div>
@@ -161,14 +154,11 @@
       <div class="pocket corner p-bl"></div>
       <div class="pocket side p-bc"></div>
       <div class="pocket corner p-br"></div>
-
-      <!-- ポイント（ダイアモンド）は JS で動的生成 -->
     </div>
   </div>
 
-  <!-- ボールラック（待機エリア） -->
   <div class="rack-container">
-    <div class="rack-title">ボールラック（タップでテーブルへ配置 / ドラッグで戻す）</div>
+    <div class="rack-title">ボールラック（タップで配置 / 枠外ドラッグで戻す）</div>
     <div id="ball-rack"></div>
   </div>
 
@@ -180,61 +170,62 @@
   <script>
     const tableCanvas = document.getElementById('table-canvas');
     const tableFrame = document.getElementById('table-frame');
+    const diamondsContainer = document.getElementById('diamonds-container');
     const ballRack = document.getElementById('ball-rack');
     let activeBall = null;
 
-    // 定義データ（手球:0, 的球:1〜9）※必要に応じて15番まで拡張可能
     const ballConfigs = [
-      { id: 0, text: '手', class: 'b-0' },
-      { id: 1, text: '1', class: 'b-1' },
-      { id: 2, text: '2', class: 'b-2' },
-      { id: 3, text: '3', class: 'b-3' },
-      { id: 4, text: '4', class: 'b-4' },
-      { id: 5, text: '5', class: 'b-5' },
-      { id: 6, text: '6', class: 'b-6' },
-      { id: 7, text: '7', class: 'b-7' },
-      { id: 8, text: '8', class: 'b-8' },
-      { id: 9, text: '9', class: 'b-9' }
+      { id: 0, text: '手', class: 'b-0' }, { id: 1, text: '1', class: 'b-1' }, { id: 2, text: '2', class: 'b-2' }, { id: 3, text: '3', class: 'b-3' },
+      { id: 4, text: '4', class: 'b-4' }, { id: 5, text: '5', class: 'b-5' }, { id: 6, text: '6', class: 'b-6' }, { id: 7, text: '7', class: 'b-7' },
+      { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
     ];
 
-    // ポイント（ダイヤ）の配置生成（長辺3等分×2、短辺3等分）
+    // ダイヤ（ポイント）の動的生成
     function createDiamonds() {
-      const frameRect = tableFrame.getBoundingClientRect();
-      const canvasRect = tableCanvas.getBoundingClientRect();
+      // 9ft台のポイント配置（長辺を8等分、短辺を4等分）
       
-      // 上下クッションのダイヤ (各3箇所)
-      [25, 50, 75].forEach(x => {
-        addDiamond(x + '%', '2%');
-        addDiamond(x + '%', '98%');
-      });
-      // 左右クッションのダイヤ (各7箇所：9ftの標準配置)
-      [12.5, 25, 37.5, 50, 62.5, 75, 87.5].forEach(x => {
-        // テーブル枠の上下枠内にダイヤを生成
-      });
+      // 上下クッション (長辺)
+      for (let i = 1; i < 8; i++) {
+        // 上 (百分率での位置計算: 2.5%はframeのpadding分)
+        addDiamond(diamondsContainer, `calc(2.5% + (95% * ${i} / 8))`, '2.5%');
+        // 下
+        addDiamond(diamondsContainer, `calc(2.5% + (95% * ${i} / 8))`, '97.5%');
+      }
+
+      // 左右クッション (短辺)
+      for (let i = 1; i < 4; i++) {
+        // 左
+        addDiamond(diamondsContainer, '1.2%', `calc(4.5% + (91% * ${i} / 4))`);
+        // 右
+        addDiamond(diamondsContainer, '98.8%', `calc(4.5% + (91% * ${i} / 4))`);
+      }
+    }
+
+    function addDiamond(container, x, y) {
+      const diamond = document.createElement('div');
+      diamond.className = 'diamond';
+      diamond.style.left = x;
+      diamond.style.top = y;
+      container.appendChild(diamond);
     }
 
     // 初期化処理
     function init() {
+      createDiamonds(); // ダイヤを生成
       renderRack();
-      
-      // URLからの読み込みがなければデフォルト配置
       if (!loadLayoutFromURL()) {
         resetToDefault();
       }
     }
 
-    // デフォルト配置（手球：ヘッドライン上25%、1番：フットスポット75%）
+    // デフォルト配置
     function resetToDefault() {
-      // 一旦テーブル上のボールをすべてラックに戻す
       document.querySelectorAll('#table-canvas .ball').forEach(b => b.remove());
-      
-      spawnBallOnTable(0, 25, 50); // 手球
-      spawnBallOnTable(1, 75, 50); // 1番球
-      
+      spawnBallOnTable(0, 25, 50); // 手球 (ヘッドライン上)
+      spawnBallOnTable(1, 75, 50); // 1番球 (フットスポット上)
       renderRack();
     }
 
-    // テーブル上にボールを出せる状態にする
     function spawnBallOnTable(id, xPercent, yPercent) {
       let ball = document.getElementById(`ball-${id}`);
       if (!ball) {
@@ -244,18 +235,15 @@
         ball.className = `ball ${conf.class}`;
         ball.innerText = conf.text;
         ball.dataset.id = id;
-
         ball.addEventListener('mousedown', startDrag);
         ball.addEventListener('touchstart', startDrag, { passive: false });
       }
-
       ball.style.left = `${xPercent}%`;
       ball.style.top = `${yPercent}%`;
       tableCanvas.appendChild(ball);
       renderRack();
     }
 
-    // ラックの描画（テーブル上にないボールだけ表示）
     function renderRack() {
       ballRack.innerHTML = '';
       ballConfigs.forEach(conf => {
@@ -264,14 +252,13 @@
           const rackBall = document.createElement('div');
           rackBall.className = `rack-ball ${conf.class}`;
           rackBall.innerText = conf.text;
-          // ラック内のボールをタップするとテーブルの中央に配置
           rackBall.onclick = () => spawnBallOnTable(conf.id, 50, 50);
           ballRack.appendChild(rackBall);
         }
       });
     }
 
-    // ドラッグ＆ドロップ制御
+    // ドラッグ＆ドロップ
     function startDrag(e) {
       e.preventDefault();
       activeBall = e.target;
@@ -290,18 +277,17 @@
       let x = ((clientX - rect.left) / rect.width) * 100;
       let y = ((clientY - rect.top) / rect.height) * 100;
 
-      // テーブル枠外（ラック方向）にドラッグした場合はテーブルから除去（ラックに戻す）
-      if (x < -5 || x > 105 || y < -10 || y > 110) {
+      // ラックに戻す判定（枠外）
+      if (x < -8 || x > 108 || y < -12 || y > 112) {
         activeBall.remove();
         stopDrag();
         renderRack();
         return;
       }
 
-      // クッションの内側に収まるようバウンド制限
+      // クッション内制限
       x = Math.max(3, Math.min(97, x));
-      y = Math.max(5, Math.min(95, y));
-
+      y = Math.max(6, Math.min(94, y));
       activeBall.style.left = `${x}%`;
       activeBall.style.top = `${y}%`;
     }
@@ -312,44 +298,26 @@
       document.removeEventListener('touchmove', drag);
     }
 
-    // URL共有機能
+    // URL共有
     function shareLayout() {
       const activeBalls = document.querySelectorAll('#table-canvas .ball');
       const layoutData = {};
-      
-      activeBalls.forEach(ball => {
-        const id = ball.dataset.id;
-        layoutData[id] = {
-          x: parseFloat(ball.style.left),
-          y: parseFloat(ball.style.top)
-        };
-      });
-
+      activeBalls.forEach(ball => { layoutData[ball.dataset.id] = { x: parseFloat(ball.style.left), y: parseFloat(ball.style.top) }; });
       const encoded = encodeURIComponent(btoa(JSON.stringify(layoutData)));
       const shareUrl = `${location.origin}${location.pathname}?layout=${encoded}`;
-      
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert('配置の共有URLをコピーしました！');
-      });
+      navigator.clipboard.writeText(shareUrl).then(() => { alert('配置の共有URLをコピーしました！'); });
     }
 
     function loadLayoutFromURL() {
       const params = new URLSearchParams(window.location.search);
       const layoutParam = params.get('layout');
       if (!layoutParam) return false;
-
       try {
         const layoutData = JSON.parse(atob(decodeURIComponent(layoutParam)));
         document.querySelectorAll('#table-canvas .ball').forEach(b => b.remove());
-
-        Object.keys(layoutData).forEach(id => {
-          spawnBallOnTable(parseInt(id), layoutData[id].x, layoutData[id].y);
-        });
+        Object.keys(layoutData).forEach(id => { spawnBallOnTable(parseInt(id), layoutData[id].x, layoutData[id].y); });
         return true;
-      } catch (e) {
-        console.error('URL解析エラー:', e);
-        return false;
-      }
+      } catch (e) { return false; }
     }
 
     window.onload = init;
