@@ -161,6 +161,29 @@
     .b-8 { background: #111111; color: #fff; border: 1px solid #444; }
     .b-9 { background: repeating-linear-gradient(0deg, #f1c40f, #f1c40f 35%, #fff 35%, #fff 65%, #f1c40f 65%); color: #000; }
 
+    /* パネルヘッダー共通スタイル */
+    .panel-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #444;
+    }
+    .panel-title { font-size: 0.65rem; color: #ccc; font-weight: bold; }
+    .close-btn {
+      background: transparent !important;
+      border: none !important;
+      color: #aaa !important;
+      font-size: 0.85rem !important;
+      padding: 0 4px !important;
+      cursor: pointer;
+      line-height: 1;
+      width: auto !important;
+    }
+    .close-btn:active { color: #fff !important; }
+
     .rack-container {
       margin-top: 6px;
       width: min(94vw, calc((100dvh - 130px) * (50 / 27)));
@@ -168,15 +191,20 @@
       background: #222;
       border: 1px solid #444;
       border-radius: 6px;
-      padding: 4px 8px;
+      padding: 6px 8px;
       box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
       flex-shrink: 0;
     }
+    /* 縦画面時はパネルヘッダーを非表示 */
+    .rack-container .panel-header { display: none; }
+
     .rack-title { font-size: 0.72rem; color: #aaa; margin-bottom: 3px; text-align: center; }
     #ball-rack { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 28px; align-items: center; }
     .rack-ball { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.68rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
 
     .controls { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; flex-shrink: 0; }
+    .controls .panel-header { display: none; }
+
     .toggle-label {
       display: flex;
       align-items: center;
@@ -203,12 +231,10 @@
     button { padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 4px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
 
-    /* 横画面時の開閉（トグル）用ボタン（縦画面では非表示） */
-    .drawer-btn {
-      display: none;
-    }
+    /* 横画面用のトリガーボタン */
+    .drawer-btn { display: none; }
 
-    /* 横画面時のスタイル：パネル類を非表示トグル化 */
+    /* 横画面時のスタイル */
     @media (orientation: landscape) {
       body {
         justify-content: center;
@@ -230,7 +256,7 @@
         z-index: 1;
       }
 
-      /* 横画面用トグルボタン */
+      /* 横画面用開くボタン */
       .drawer-btn {
         display: flex;
         align-items: center;
@@ -252,13 +278,15 @@
         user-select: none;
       }
 
-      #btn-toggle-rack {
-        left: max(4px, env(safe-area-inset-left));
-      }
+      #btn-toggle-rack { left: max(4px, env(safe-area-inset-left)); }
+      #btn-toggle-controls { right: max(4px, env(safe-area-inset-right)); }
 
-      #btn-toggle-controls {
-        right: max(4px, env(safe-area-inset-right));
+      /* パネル内ヘッダーを横画面時のみ表示 */
+      .rack-container .panel-header,
+      .controls .panel-header {
+        display: flex;
       }
+      .rack-title { display: none; } /* 縦画面用の重複タイトルを消す */
 
       /* 左スライドパネル（ボールラック） */
       .rack-container {
@@ -267,10 +295,10 @@
         top: 50%;
         transform: translateY(-50%) translateX(-130%);
         transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
-        width: 76px;
+        width: 80px;
         margin-top: 0;
-        padding: 6px 4px;
-        background: rgba(25, 25, 25, 0.92);
+        padding: 6px 5px;
+        background: rgba(25, 25, 25, 0.94);
         backdrop-filter: blur(8px);
         box-shadow: 0 4px 16px rgba(0,0,0,0.7);
         border: 1px solid #555;
@@ -282,7 +310,6 @@
       .rack-container.is-open {
         transform: translateY(-50%) translateX(0);
       }
-      .rack-title { font-size: 0.6rem; margin-bottom: 4px; }
       #ball-rack { width: 100%; gap: 4px; justify-content: center; }
       .rack-ball { width: 22px; height: 22px; font-size: 0.6rem; }
 
@@ -293,14 +320,14 @@
         top: 50%;
         transform: translateY(-50%) translateX(130%);
         transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
-        width: 110px;
+        width: 115px;
         margin-top: 0;
         flex-direction: column;
         align-items: stretch;
         gap: 6px;
-        background: rgba(25, 25, 25, 0.92);
+        background: rgba(25, 25, 25, 0.94);
         backdrop-filter: blur(8px);
-        padding: 8px 6px;
+        padding: 6px;
         border-radius: 6px;
         border: 1px solid #555;
         box-shadow: 0 4px 16px rgba(0,0,0,0.7);
@@ -330,7 +357,7 @@
 
   <h1>9ft Billiards Layout Editor</h1>
 
-  <!-- 横画面用開閉ボタン -->
+  <!-- 横画面用開くボタン -->
   <div class="drawer-btn" id="btn-toggle-rack" onclick="toggleRack()">ラック ❯</div>
   <div class="drawer-btn" id="btn-toggle-controls" onclick="toggleControls()">❮ 設定</div>
 
@@ -352,12 +379,23 @@
     </div>
   </div>
 
+  <!-- ボールラックパネル -->
   <div class="rack-container" id="rack-panel">
+    <div class="panel-header">
+      <span class="panel-title">ラック</span>
+      <button class="close-btn" onclick="toggleRack()">✕</button>
+    </div>
     <div class="rack-title">ボールラック</div>
     <div id="ball-rack"></div>
   </div>
 
+  <!-- 設定パネル -->
   <div class="controls" id="controls-panel">
+    <div class="panel-header">
+      <span class="panel-title">設定・操作</span>
+      <button class="close-btn" onclick="toggleControls()">✕</button>
+    </div>
+
     <label class="toggle-label">
       <input type="checkbox" id="snap-toggle" onchange="toggleSnap(this.checked)">
       <span>グリッド吸着</span>
@@ -398,15 +436,15 @@
       { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
     ];
 
-    /* 横画面時のパネル開閉関数 */
+    /* パネル開閉関数（パネルが開いた時は外側ボタンを自動非表示） */
     function toggleRack() {
       const isOpen = rackPanel.classList.toggle('is-open');
-      btnToggleRack.innerText = isOpen ? '❮ 閉じる' : 'ラック ❯';
+      btnToggleRack.style.display = isOpen ? 'none' : 'flex';
     }
 
     function toggleControls() {
       const isOpen = controlsPanel.classList.toggle('is-open');
-      btnToggleControls.innerText = isOpen ? '閉じる ❯' : '❮ 設定';
+      btnToggleControls.style.display = isOpen ? 'none' : 'flex';
     }
 
     function createDiamonds() {
