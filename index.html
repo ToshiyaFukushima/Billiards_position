@@ -9,101 +9,136 @@
     body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
     h1 { font-size: 1.1rem; margin: 5px 0 10px; color: #ddd; }
 
-    /* 外枠（木枠部分） */
-    .table-frame {
+    /* メタリック外枠フレーム */
+    .table-container {
       width: 95vw;
-      max-width: 700px;
-      aspect-ratio: 2.2 / 1.2;
-      background: #3a2212;
-      border-radius: 12px;
-      padding: 4.5% 2.5%;
+      max-width: 720px;
+      aspect-ratio: 2.15 / 1.15;
       position: relative;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      background: linear-gradient(135deg, #d8dce1 0%, #9aa0a6 50%, #6c737e 100%);
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 2px 3px rgba(255,255,255,0.8);
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    /* テーブル内側（ラシャ部分：2:1） */
+    /* 四隅の金属コーナーパーツ */
+    .metal-corner {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #ffffff 0%, #b8bec7 50%, #7e8692 100%);
+      border: 1px solid #6b727d;
+      box-shadow: inset 0 0 3px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.4);
+      z-index: 20;
+    }
+    .mc-tl { top: 2px; left: 2px; border-top-left-radius: 8px; }
+    .mc-tr { top: 2px; right: 2px; border-top-right-radius: 8px; }
+    .mc-bl { bottom: 2px; left: 2px; border-bottom-left-radius: 8px; }
+    .mc-br { bottom: 2px; right: 2px; border-bottom-right-radius: 8px; }
+
+    /* 木目調レール */
+    .wood-rail {
+      width: 100%;
+      height: 100%;
+      background: #472b17;
+      background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
+      border-radius: 4px;
+      padding: 16px; /* クッションまでの木枠幅 */
+      position: relative;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* テーブル内側（ラシャ：エメラルドグリーン） */
     #table-canvas {
       width: 100%;
       height: 100%;
-      background: #0d6b38;
+      background: #009a7b;
       position: relative;
-      border: 4px solid #24140a;
-      box-shadow: inset 0 0 12px rgba(0,0,0,0.6);
-      overflow: hidden; 
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+      overflow: hidden;
+      border-radius: 2px;
+    }
+
+    /* クッションの影 */
+    .cushion-shadow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+      z-index: 3;
     }
 
     /* 格子（グリッド） */
     .grid-overlay {
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+      inset: 0;
       pointer-events: none;
-      background-size: calc(100% / 8) calc(100% / 4);
+      background-size: calc(100% / 16) calc(100% / 8);
       background-image: 
-        linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255,255,255,0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.18) 1px, transparent 1px);
+      z-index: 2;
     }
 
-    /* ダイヤ（ポイント）コンテナ */
-    #diamonds-container {
+    /* ヘッドスポット & フットスポット (白点) */
+    .table-spot {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
+      width: 5px;
+      height: 5px;
+      background: #ffffff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 2px rgba(0,0,0,0.6);
       pointer-events: none;
+      z-index: 3;
     }
+    .head-spot { left: 25%; top: 50%; }
+    .foot-spot { left: 75%; top: 50%; }
 
+    /* 木枠上の白い菱形ダイヤ */
     .diamond {
       position: absolute;
-      width: 6px;
-      height: 6px;
-      background: #d4af37;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      box-shadow: 0 0 2px rgba(0,0,0,0.8);
-      z-index: 1;
+      width: 5px;
+      height: 5px;
+      background: #ffffff;
+      transform: translate(-50%, -50%) rotate(45deg);
+      box-shadow: 0 0 2px rgba(0,0,0,0.7);
+      z-index: 15;
     }
 
-    /* ライン・スポット */
-    .headline {
+    /* ポケット (6穴) */
+    .pocket {
       position: absolute;
-      left: 25%; top: 0; bottom: 0; width: 1px;
-      border-left: 1px dashed rgba(255,255,255,0.3);
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    .foot-spot {
-      position: absolute;
-      left: 75%; top: 50%; width: 8px; height: 8px;
-      background: rgba(255,255,255,0.6);
+      background: #080808;
       border-radius: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 2;
+      box-shadow: inset 0 0 8px #000000;
+      z-index: 8;
     }
-
-    /* ポケット */
-    .pocket { position: absolute; background: #111; border-radius: 50%; box-shadow: inset 0 0 8px #000; z-index: 5;}
-    .pocket.corner { width: 9%; height: 17%; }
-    .pocket.side { width: 8%; height: 13%; }
-    .p-tl { top: -4%; left: -3%; }
-    .p-tr { top: -4%; right: -3%; }
-    .p-bl { bottom: -4%; left: -3%; }
-    .p-br { bottom: -4%; right: -3%; }
-    .p-tc { top: -6%; left: 50%; transform: translateX(-50%); }
-    .p-bc { bottom: -6%; left: 50%; transform: translateX(-50%); }
+    .pocket.corner { width: 8.5%; aspect-ratio: 1; }
+    .pocket.side { width: 7.5%; aspect-ratio: 1; }
+    .p-tl { top: -3.5%; left: -3.5%; }
+    .p-tr { top: -3.5%; right: -3.5%; }
+    .p-bl { bottom: -3.5%; left: -3.5%; }
+    .p-br { bottom: -3.5%; right: -3.5%; }
+    .p-tc { top: -4.5%; left: 50%; transform: translateX(-50%); }
+    .p-bc { bottom: -4.5%; left: 50%; transform: translateX(-50%); }
 
     /* ボール */
     .ball {
       width: 5.5%; aspect-ratio: 1; border-radius: 50%; position: absolute;
       transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center;
-      font-weight: bold; font-size: 0.75rem; user-select: none; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); z-index: 10;
+      font-weight: bold; font-size: 0.75rem; user-select: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10;
       transition: left 0.05s ease, top 0.05s ease;
     }
     .ball:active { cursor: grabbing; scale: 1.1; }
 
-    /* ボールデザイン */
+    /* ボール配色 */
     .b-0 { background: #ffffff; color: #000; }
     .b-1 { background: #f1c40f; color: #000; }
     .b-2 { background: #2980b9; color: #fff; }
@@ -116,14 +151,14 @@
     .b-9 { background: repeating-linear-gradient(0deg, #f1c40f, #f1c40f 35%, #fff 35%, #fff 65%, #f1c40f 65%); color: #000; }
 
     /* ラック */
-    .rack-container { margin-top: 15px; width: 95vw; max-width: 700px; background: #222; border: 1px solid #444; border-radius: 8px; padding: 10px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
+    .rack-container { margin-top: 15px; width: 95vw; max-width: 720px; background: #222; border: 1px solid #444; border-radius: 8px; padding: 10px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
     .rack-title { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; text-align: center; }
     #ball-rack { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; align-items: center; }
     .rack-ball { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
 
     /* コントロール */
     .controls { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
-    .control-item {
+    .toggle-label {
       display: flex;
       align-items: center;
       gap: 6px;
@@ -133,21 +168,19 @@
       border-radius: 5px;
       font-size: 0.85rem;
       font-weight: bold;
+      cursor: pointer;
       user-select: none;
     }
-    .toggle-label { cursor: pointer; }
     .toggle-label input { accent-color: #27ae60; width: 16px; height: 16px; cursor: pointer; }
-    
     select {
-      background: #1a1a1a;
-      color: white;
+      background: #333;
+      color: #fff;
       border: 1px solid #555;
       padding: 4px 8px;
       border-radius: 4px;
-      font-size: 0.8rem;
-      cursor: pointer;
+      font-size: 0.85rem;
+      outline: none;
     }
-
     button { padding: 9px 16px; font-size: 0.85rem; border: none; border-radius: 5px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
   </style>
@@ -156,19 +189,32 @@
 
   <h1>9ft Billiards Layout Editor</h1>
 
-  <div class="table-frame" id="table-frame">
-    <div id="diamonds-container"></div>
-    <div id="table-canvas">
-      <div class="grid-overlay" id="grid-overlay"></div>
-      <div class="headline"></div>
-      <div class="foot-spot"></div>
+  <!-- テーブル全体（金属外枠） -->
+  <div class="table-container">
+    <div class="metal-corner mc-tl"></div>
+    <div class="metal-corner mc-tr"></div>
+    <div class="metal-corner mc-bl"></div>
+    <div class="metal-corner mc-br"></div>
 
-      <div class="pocket corner p-tl"></div>
-      <div class="pocket side p-tc"></div>
-      <div class="pocket corner p-tr"></div>
-      <div class="pocket corner p-bl"></div>
-      <div class="pocket side p-bc"></div>
-      <div class="pocket corner p-br"></div>
+    <!-- 木目調レール -->
+    <div class="wood-rail" id="wood-rail">
+      <!-- ラシャ（プレイフィールド） -->
+      <div id="table-canvas">
+        <div class="cushion-shadow"></div>
+        <div class="grid-overlay" id="grid-overlay"></div>
+        
+        <!-- ヘッドスポット & フットスポット -->
+        <div class="table-spot head-spot"></div>
+        <div class="table-spot foot-spot"></div>
+
+        <!-- 6つのポケット -->
+        <div class="pocket corner p-tl"></div>
+        <div class="pocket side p-tc"></div>
+        <div class="pocket corner p-tr"></div>
+        <div class="pocket corner p-bl"></div>
+        <div class="pocket side p-bc"></div>
+        <div class="pocket corner p-br"></div>
+      </div>
     </div>
   </div>
 
@@ -178,34 +224,32 @@
   </div>
 
   <div class="controls">
-    <!-- スナップ ON/OFF -->
-    <label class="control-item toggle-label">
+    <label class="toggle-label">
       <input type="checkbox" id="snap-toggle" onchange="toggleSnap(this.checked)">
       <span>グリッド吸着</span>
     </label>
 
-    <!-- 吸着精度の選択 -->
-    <div class="control-item">
+    <label class="toggle-label">
       <span>精度:</span>
       <select id="grid-density" onchange="updateGridDensity(this.value)">
-        <option value="1">1/1 ダイヤ (8×4)</option>
-        <option value="2" selected>1/2 ダイヤ (16×8)</option>
-        <option value="4">1/4 ダイヤ (32×16)</option>
-        <option value="8">1/8 ダイヤ (64×32)</option>
+        <option value="1">1ダイヤ (8×4)</option>
+        <option value="0.5" selected>0.5ダイヤ (16×8)</option>
+        <option value="0.25">0.25ダイヤ (32×16)</option>
       </select>
-    </div>
+    </label>
 
     <button onclick="resetToDefault()">初期配置に戻す</button>
   </div>
 
   <script>
     const tableCanvas = document.getElementById('table-canvas');
-    const diamondsContainer = document.getElementById('diamonds-container');
-    const ballRack = document.getElementById('ball-rack');
+    const woodRail = document.getElementById('wood-rail');
     const gridOverlay = document.getElementById('grid-overlay');
+    const ballRack = document.getElementById('ball-rack');
+    
     let activeBall = null;
     let isSnapEnabled = false;
-    let gridMultiplier = 2; // デフォルト 1/2ダイヤ (16x8)
+    let gridStep = 0.5;
 
     const ballConfigs = [
       { id: 0, text: '手', class: 'b-0' }, { id: 1, text: '1', class: 'b-1' }, { id: 2, text: '2', class: 'b-2' }, { id: 3, text: '3', class: 'b-3' },
@@ -213,14 +257,17 @@
       { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
     ];
 
+    // 木目レール上にダイヤ（ポイント）を正確に配置
     function createDiamonds() {
+      // 長辺 (7個ずつ)
       for (let i = 1; i < 8; i++) {
-        addDiamond(diamondsContainer, `calc(2.5% + (95% * ${i} / 8))`, '2.5%');
-        addDiamond(diamondsContainer, `calc(2.5% + (95% * ${i} / 8))`, '97.5%');
+        addDiamond(woodRail, `calc(16px + (100% - 32px) * ${i} / 8)`, '8px');
+        addDiamond(woodRail, `calc(16px + (100% - 32px) * ${i} / 8)`, 'calc(100% - 8px)');
       }
+      // 短辺 (3個ずつ)
       for (let i = 1; i < 4; i++) {
-        addDiamond(diamondsContainer, '1.2%', `calc(4.5% + (91% * ${i} / 4))`);
-        addDiamond(diamondsContainer, '98.8%', `calc(4.5% + (91% * ${i} / 4))`);
+        addDiamond(woodRail, '8px', `calc(16px + (100% - 32px) * ${i} / 4)`);
+        addDiamond(woodRail, 'calc(100% - 8px)', `calc(16px + (100% - 32px) * ${i} / 4)`);
       }
     }
 
@@ -232,29 +279,24 @@
       container.appendChild(diamond);
     }
 
-    function toggleSnap(enabled) {
-      isSnapEnabled = enabled;
-    }
+    function toggleSnap(enabled) { isSnapEnabled = enabled; }
 
-    // 吸着精度を変更した際にグリッド線の見た目を更新
     function updateGridDensity(value) {
-      gridMultiplier = parseInt(value, 10);
-      const cols = 8 * gridMultiplier;
-      const rows = 4 * gridMultiplier;
+      gridStep = parseFloat(value);
+      const cols = 8 / gridStep;
+      const rows = 4 / gridStep;
       gridOverlay.style.backgroundSize = `calc(100% / ${cols}) calc(100% / ${rows})`;
     }
 
-    // 指定された分割数（精度）に基づくスナップ位置計算
     function getSnappedPosition(x, y) {
-      const cols = 8 * gridMultiplier;
-      const rows = 4 * gridMultiplier;
+      const cols = 8 / gridStep;
+      const rows = 4 / gridStep;
       const stepX = 100 / cols;
       const stepY = 100 / rows;
-
-      let snappedX = Math.round(x / stepX) * stepX;
-      let snappedY = Math.round(y / stepY) * stepY;
-
-      return { x: snappedX, y: snappedY };
+      return {
+        x: Math.round(x / stepX) * stepX,
+        y: Math.round(y / stepY) * stepY
+      };
     }
 
     function init() {
@@ -265,8 +307,8 @@
 
     function resetToDefault() {
       document.querySelectorAll('#table-canvas .ball').forEach(b => b.remove());
-      spawnBallOnTable(0, 25, 50);
-      spawnBallOnTable(1, 75, 50);
+      spawnBallOnTable(0, 25, 50); // 手球（ヘッドスポット上）
+      spawnBallOnTable(1, 75, 50); // 1番球（フットスポット上）
       renderRack();
     }
 
