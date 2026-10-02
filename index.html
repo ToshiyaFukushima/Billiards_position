@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>9ft Billiards Layout with Grid & Snap</title>
+  <title>9ft Billiards Layout Editor</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
@@ -121,34 +121,45 @@
     #ball-rack { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; align-items: center; }
     .rack-ball { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
 
-    /* コントロール・スナップトグル */
+    /* コントロール */
     .controls { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
-    .toggle-label {
+    .control-item {
       display: flex;
       align-items: center;
       gap: 6px;
       background: #2a2a2a;
       border: 1px solid #444;
-      padding: 9px 14px;
+      padding: 7px 12px;
       border-radius: 5px;
       font-size: 0.85rem;
       font-weight: bold;
-      cursor: pointer;
       user-select: none;
     }
+    .toggle-label { cursor: pointer; }
     .toggle-label input { accent-color: #27ae60; width: 16px; height: 16px; cursor: pointer; }
-    button { padding: 10px 18px; font-size: 0.85rem; border: none; border-radius: 5px; background: #27ae60; color: white; cursor: pointer; font-weight: bold; }
-    button.reset { background: #c0392b; }
+    
+    select {
+      background: #1a1a1a;
+      color: white;
+      border: 1px solid #555;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    button { padding: 9px 16px; font-size: 0.85rem; border: none; border-radius: 5px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
+    button:active { opacity: 0.8; }
   </style>
 </head>
 <body>
 
-  <h1>9ft Billiards Layout & Grid Snap</h1>
+  <h1>9ft Billiards Layout Editor</h1>
 
   <div class="table-frame" id="table-frame">
     <div id="diamonds-container"></div>
     <div id="table-canvas">
-      <div class="grid-overlay"></div>
+      <div class="grid-overlay" id="grid-overlay"></div>
       <div class="headline"></div>
       <div class="foot-spot"></div>
 
@@ -167,22 +178,34 @@
   </div>
 
   <div class="controls">
-    <!-- グリッド吸着トグル -->
-    <label class="toggle-label">
+    <!-- スナップ ON/OFF -->
+    <label class="control-item toggle-label">
       <input type="checkbox" id="snap-toggle" onchange="toggleSnap(this.checked)">
-      <span>グリッドに吸着</span>
+      <span>グリッド吸着</span>
     </label>
-    <button onclick="shareLayout()">共有URLをコピー</button>
-    <button class="reset" onclick="resetToDefault()">初期配置に戻す</button>
+
+    <!-- 吸着精度の選択 -->
+    <div class="control-item">
+      <span>精度:</span>
+      <select id="grid-density" onchange="updateGridDensity(this.value)">
+        <option value="1">1/1 ダイヤ (8×4)</option>
+        <option value="2" selected>1/2 ダイヤ (16×8)</option>
+        <option value="4">1/4 ダイヤ (32×16)</option>
+        <option value="8">1/8 ダイヤ (64×32)</option>
+      </select>
+    </div>
+
+    <button onclick="resetToDefault()">初期配置に戻す</button>
   </div>
 
   <script>
     const tableCanvas = document.getElementById('table-canvas');
-    const tableFrame = document.getElementById('table-frame');
     const diamondsContainer = document.getElementById('diamonds-container');
     const ballRack = document.getElementById('ball-rack');
+    const gridOverlay = document.getElementById('grid-overlay');
     let activeBall = null;
     let isSnapEnabled = false;
+    let gridMultiplier = 2; // デフォルト 1/2ダイヤ (16x8)
 
     const ballConfigs = [
       { id: 0, text: '手', class: 'b-0' }, { id: 1, text: '1', class: 'b-1' }, { id: 2, text: '2', class: 'b-2' }, { id: 3, text: '3', class: 'b-3' },
@@ -213,10 +236,20 @@
       isSnapEnabled = enabled;
     }
 
-    // 最寄りのグリッド交点（長辺8分割・短辺4分割）へ位置補正
+    // 吸着精度を変更した際にグリッド線の見た目を更新
+    function updateGridDensity(value) {
+      gridMultiplier = parseInt(value, 10);
+      const cols = 8 * gridMultiplier;
+      const rows = 4 * gridMultiplier;
+      gridOverlay.style.backgroundSize = `calc(100% / ${cols}) calc(100% / ${rows})`;
+    }
+
+    // 指定された分割数（精度）に基づくスナップ位置計算
     function getSnappedPosition(x, y) {
-      const stepX = 100 / 8; // 12.5%
-      const stepY = 100 / 4; // 25.0%
+      const cols = 8 * gridMultiplier;
+      const rows = 4 * gridMultiplier;
+      const stepX = 100 / cols;
+      const stepY = 100 / rows;
 
       let snappedX = Math.round(x / stepX) * stepX;
       let snappedY = Math.round(y / stepY) * stepY;
@@ -226,10 +259,8 @@
 
     function init() {
       createDiamonds();
-      renderRack();
-      if (!loadLayoutFromURL()) {
-        resetToDefault();
-      }
+      updateGridDensity(document.getElementById('grid-density').value);
+      resetToDefault();
     }
 
     function resetToDefault() {
@@ -296,7 +327,6 @@
       let x = ((clientX - rect.left) / rect.width) * 100;
       let y = ((clientY - rect.top) / rect.height) * 100;
 
-      // ラックに戻す判定（外枠へ大きく出たとき）
       if (x < -8 || x > 108 || y < -12 || y > 112) {
         activeBall.remove();
         stopDrag();
@@ -304,13 +334,11 @@
         return;
       }
 
-      // スナップ機能がONの場合は最寄りの交点にピタッと吸着
       if (isSnapEnabled) {
         const snapped = getSnappedPosition(x, y);
         x = snapped.x;
         y = snapped.y;
       } else {
-        // OFFの場合は自由配置（枠内制限のみ）
         x = Math.max(3, Math.min(97, x));
         y = Math.max(5, Math.min(95, y));
       }
@@ -323,27 +351,6 @@
       activeBall = null;
       document.removeEventListener('mousemove', drag);
       document.removeEventListener('touchmove', drag);
-    }
-
-    function shareLayout() {
-      const activeBalls = document.querySelectorAll('#table-canvas .ball');
-      const layoutData = {};
-      activeBalls.forEach(ball => { layoutData[ball.dataset.id] = { x: parseFloat(ball.style.left), y: parseFloat(ball.style.top) }; });
-      const encoded = encodeURIComponent(btoa(JSON.stringify(layoutData)));
-      const shareUrl = `${location.origin}${location.pathname}?layout=${encoded}`;
-      navigator.clipboard.writeText(shareUrl).then(() => { alert('配置の共有URLをコピーしました！'); });
-    }
-
-    function loadLayoutFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      const layoutParam = params.get('layout');
-      if (!layoutParam) return false;
-      try {
-        const layoutData = JSON.parse(atob(decodeURIComponent(layoutParam)));
-        document.querySelectorAll('#table-canvas .ball').forEach(b => b.remove());
-        Object.keys(layoutData).forEach(id => { spawnBallOnTable(parseInt(id), layoutData[id].x, layoutData[id].y); });
-        return true;
-      } catch (e) { return false; }
     }
 
     window.onload = init;
