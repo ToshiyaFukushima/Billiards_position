@@ -6,8 +6,16 @@
   <title>9ft Billiards Layout Editor</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
-    body {
+    
+    html, body {
+      width: 100%;
+      height: 100%;
       margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    body {
       font-family: sans-serif;
       background: #121212;
       color: white;
@@ -15,26 +23,32 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 8px;
-      overflow-x: hidden;
+      padding: 6px;
     }
-    h1 { font-size: 1.1rem; margin: 2px 0 6px; color: #ddd; text-align: center; }
 
-    /* 木目調レール（画面の幅と高さの両方から縦横比を保って自動フィッティング） */
+    h1 {
+      font-size: 1rem;
+      margin: 2px 0 6px;
+      color: #ddd;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* 木目調レール（通常縦画面時） */
     .wood-rail {
-      width: min(92vw, calc((100vh - 120px) * 1.85));
+      /* 縦横比を保ちつつ画面内に収まる最大サイズ計算 */
+      width: min(94vw, calc((100vh - 130px) * 1.85));
       max-width: 720px;
       background: #3e2312;
       background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
       border-radius: 10px;
-      padding: 4.5%; /* 木枠の厚み */
+      padding: 4%; /* 木枠の厚み */
       position: relative;
       box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.9);
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      flex-shrink: 0; /* 重なり防止 */
     }
 
     /* 実台規格：プレイエリア（ラシャ）のアスペクト比を正確に 2 : 1 に固定 */
@@ -59,7 +73,7 @@
       border-radius: 2px;
     }
 
-    /* 格子（グリッド） - 2:1のラシャ面に対して常に正方形マス目 */
+    /* 格子（グリッド） */
     .grid-overlay {
       position: absolute;
       inset: 0;
@@ -98,7 +112,7 @@
       pointer-events: none;
     }
 
-    /* ポケット (クッションの少し奥・木枠内に配置) */
+    /* ポケット (木枠内調整済み) */
     .pocket {
       position: absolute;
       background: #0a0a0a;
@@ -148,54 +162,69 @@
 
     /* ラック */
     .rack-container {
-      margin-top: 8px;
-      width: min(92vw, calc((100vh - 120px) * 1.85));
+      margin-top: 6px;
+      width: min(94vw, calc((100vh - 130px) * 1.85));
       max-width: 720px;
       background: #222;
       border: 1px solid #444;
-      border-radius: 8px;
-      padding: 6px 10px;
+      border-radius: 6px;
+      padding: 4px 8px;
       box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-      flex-shrink: 0;
+      flex-shrink: 0; /* 重なり防止 */
     }
-    .rack-title { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; text-align: center; }
-    #ball-rack { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 30px; align-items: center; }
+    .rack-title { font-size: 0.72rem; color: #aaa; margin-bottom: 3px; text-align: center; }
+    #ball-rack { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 28px; align-items: center; }
     .rack-ball { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.68rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
 
     /* コントロール */
-    .controls { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; flex-shrink: 0; }
+    .controls { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; flex-shrink: 0; }
     .toggle-label {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       background: #2a2a2a;
       border: 1px solid #444;
-      padding: 4px 8px;
-      border-radius: 5px;
-      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
       font-weight: bold;
       cursor: pointer;
       user-select: none;
     }
-    .toggle-label input { accent-color: #27ae60; width: 14px; height: 14px; cursor: pointer; }
+    .toggle-label input { accent-color: #27ae60; width: 13px; height: 13px; cursor: pointer; }
     select {
       background: #333;
       color: #fff;
       border: 1px solid #555;
-      padding: 3px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       outline: none;
     }
-    button { padding: 5px 12px; font-size: 0.78rem; border: none; border-radius: 5px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
+    button { padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 4px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
 
-    /* 横画面・高さが極小のときの省スペース調整 */
-    @media (max-height: 480px) {
-      h1 { font-size: 0.85rem; margin: 1px 0; }
-      .rack-container { margin-top: 4px; padding: 3px; }
-      .controls { margin-top: 4px; gap: 6px; }
+    /* 横画面（画面の高さが低くなる時）の専用レスポンシブ設定 */
+    @media (orientation: landscape) or (max-height: 520px) {
+      body { padding: 4px; }
+      h1 { font-size: 0.8rem; margin: 0 0 2px; }
+
+      /* 他パーツの要素を最小限に抑え、画面高さギリギリ最大のテーブルサイズを計算 */
+      .wood-rail {
+        width: min(96vw, calc((100vh - 78px) * 1.85));
+      }
+      .rack-container {
+        width: min(96vw, calc((100vh - 78px) * 1.85));
+        margin-top: 3px;
+        padding: 2px 6px;
+      }
+      .rack-title { font-size: 0.65rem; margin-bottom: 2px; }
+      #ball-rack { min-height: 22px; gap: 4px; }
       .rack-ball { width: 22px; height: 22px; font-size: 0.6rem; }
+      
+      .controls { margin-top: 3px; gap: 6px; }
+      .toggle-label { padding: 2px 6px; font-size: 0.7rem; }
+      select, button { padding: 2px 6px; font-size: 0.7rem; }
     }
   </style>
 </head>
@@ -270,13 +299,13 @@
     function createDiamonds() {
       diamondsLayer.innerHTML = '';
 
-      // 長辺 (7個ずつ: 1/8, 2/8 ... 7/8)
+      // 長辺 (7個ずつ)
       for (let i = 1; i < 8; i++) {
         const xPct = (100 / 8) * i;
         addDiamond(diamondsLayer, `${xPct}%`, '-7px');
         addDiamond(diamondsLayer, `${xPct}%`, 'calc(100% + 7px)');
       }
-      // 短辺 (3個ずつ: 1/4, 2/4, 3/4)
+      // 短辺 (3個ずつ)
       for (let i = 1; i < 4; i++) {
         const yPct = (100 / 4) * i;
         addDiamond(diamondsLayer, '-7px', `${yPct}%`);
