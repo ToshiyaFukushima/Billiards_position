@@ -9,46 +9,17 @@
     body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
     h1 { font-size: 1.1rem; margin: 5px 0 10px; color: #ddd; }
 
-    /* メタリック外枠フレーム */
-    .table-container {
+    /* 木目調レール（外枠テーブルコンテナ） */
+    .wood-rail {
       width: 95vw;
       max-width: 720px;
-      aspect-ratio: 2.15 / 1.15;
-      position: relative;
-      background: linear-gradient(135deg, #d8dce1 0%, #9aa0a6 50%, #6c737e 100%);
-      border-radius: 10px;
-      padding: 8px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 2px 3px rgba(255,255,255,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* 四隅の金属コーナーパーツ */
-    .metal-corner {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #ffffff 0%, #b8bec7 50%, #7e8692 100%);
-      border: 1px solid #6b727d;
-      box-shadow: inset 0 0 3px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.4);
-      z-index: 20;
-    }
-    .mc-tl { top: 2px; left: 2px; border-top-left-radius: 8px; }
-    .mc-tr { top: 2px; right: 2px; border-top-right-radius: 8px; }
-    .mc-bl { bottom: 2px; left: 2px; border-bottom-left-radius: 8px; }
-    .mc-br { bottom: 2px; right: 2px; border-bottom-right-radius: 8px; }
-
-    /* 木目調レール */
-    .wood-rail {
-      width: 100%;
-      height: 100%;
-      background: #472b17;
+      aspect-ratio: 2.1 / 1.1;
+      background: #3e2312;
       background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
-      border-radius: 4px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 20px; /* 木枠（レール）の厚み */
       position: relative;
-      box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.9);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -60,18 +31,18 @@
       height: 100%;
       background: #009a7b;
       position: relative;
-      box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
-      overflow: visible; /* ダイヤを枠外に描画するため visible に指定 */
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.7);
+      overflow: visible; /* ポケットをクッション奥（枠外）へはみ出させるため */
       border-radius: 2px;
       touch-action: none;
     }
 
-    /* クッションの影 */
+    /* クッションの内側立体感 */
     .cushion-shadow {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
       z-index: 3;
       border-radius: 2px;
     }
@@ -103,34 +74,37 @@
     .head-spot { left: 25%; top: 50%; }
     .foot-spot { left: 75%; top: 50%; }
 
-    /* 木枠上の白い菱形ダイヤ（ラシャ座標と完全同期） */
+    /* 木枠上の白い菱形ダイヤ */
     .diamond {
       position: absolute;
-      width: 5px;
-      height: 5px;
+      width: 6px;
+      height: 6px;
       background: #ffffff;
       transform: translate(-50%, -50%) rotate(45deg);
-      box-shadow: 0 0 2px rgba(0,0,0,0.7);
+      box-shadow: 0 0 2px rgba(0,0,0,0.8);
       z-index: 15;
       pointer-events: none;
     }
 
-    /* ポケット (6穴) */
+    /* ポケット (クッションの少し奥・フレーム側へ落とし込み) */
     .pocket {
       position: absolute;
-      background: #080808;
+      background: #0a0a0a;
       border-radius: 50%;
-      box-shadow: inset 0 0 8px #000000;
-      z-index: 8;
+      box-shadow: inset 0 0 10px #000000, 0 0 4px rgba(0,0,0,0.8);
+      z-index: 1; /* ラシャやクッションの背後・奥側に配置 */
+      transform: translate(-50%, -50%);
     }
-    .pocket.corner { width: 8.5%; aspect-ratio: 1; }
-    .pocket.side { width: 7.5%; aspect-ratio: 1; }
-    .p-tl { top: -3.5%; left: -3.5%; }
-    .p-tr { top: -3.5%; right: -3.5%; }
-    .p-bl { bottom: -3.5%; left: -3.5%; }
-    .p-br { bottom: -3.5%; right: -3.5%; }
-    .p-tc { top: -4.5%; left: 50%; transform: translateX(-50%); }
-    .p-bc { bottom: -4.5%; left: 50%; transform: translateX(-50%); }
+    .pocket.corner { width: 9.5%; aspect-ratio: 1; }
+    .pocket.side { width: 8.5%; aspect-ratio: 1; }
+
+    /* クッションの角より少し外側（奥）へずらした配置 */
+    .p-tl { top: -2%; left: -2%; }
+    .p-tr { top: -2%; left: 102%; }
+    .p-bl { top: 102%; left: -2%; }
+    .p-br { top: 102%; left: 102%; }
+    .p-tc { top: -3.5%; left: 50%; }
+    .p-bc { top: 103.5%; left: 50%; }
 
     /* ボール */
     .ball {
@@ -200,28 +174,25 @@
 
   <h1>9ft Billiards Layout Editor</h1>
 
-  <div class="table-container">
-    <div class="metal-corner mc-tl"></div>
-    <div class="metal-corner mc-tr"></div>
-    <div class="metal-corner mc-bl"></div>
-    <div class="metal-corner mc-br"></div>
+  <!-- 木目調レール（テーブル本体） -->
+  <div class="wood-rail" id="wood-rail">
+    <!-- ラシャ（プレイフィールド） -->
+    <div id="table-canvas">
+      <div id="diamonds-layer"></div>
+      <div class="cushion-shadow"></div>
+      <div class="grid-overlay" id="grid-overlay"></div>
+      
+      <!-- ヘッドスポット & フットスポット -->
+      <div class="table-spot head-spot"></div>
+      <div class="table-spot foot-spot"></div>
 
-    <div class="wood-rail" id="wood-rail">
-      <div id="table-canvas">
-        <div id="diamonds-layer"></div>
-        <div class="cushion-shadow"></div>
-        <div class="grid-overlay" id="grid-overlay"></div>
-        
-        <div class="table-spot head-spot"></div>
-        <div class="table-spot foot-spot"></div>
-
-        <div class="pocket corner p-tl"></div>
-        <div class="pocket side p-tc"></div>
-        <div class="pocket corner p-tr"></div>
-        <div class="pocket corner p-bl"></div>
-        <div class="pocket side p-bc"></div>
-        <div class="pocket corner p-br"></div>
-      </div>
+      <!-- ポケット (クッション奥側へ配置) -->
+      <div class="pocket corner p-tl"></div>
+      <div class="pocket side p-tc"></div>
+      <div class="pocket corner p-tr"></div>
+      <div class="pocket corner p-bl"></div>
+      <div class="pocket side p-bc"></div>
+      <div class="pocket corner p-br"></div>
     </div>
   </div>
 
@@ -267,21 +238,21 @@
       { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
     ];
 
-    // ラシャ面(#table-canvas)のパーセンテージ位置と同軸上にダイヤを生成
+    // 木枠レール上の中央付近にダイヤを正確配置（ラシャ座標と同期）
     function createDiamonds() {
       diamondsLayer.innerHTML = '';
 
-      // 長辺 (7個ずつ: 1/8, 2/8 ... 7/8)
+      // 長辺 (7個ずつ)
       for (let i = 1; i < 8; i++) {
         const xPct = (100 / 8) * i;
-        addDiamond(diamondsLayer, `${xPct}%`, '-8px');                    // 上レール
-        addDiamond(diamondsLayer, `${xPct}%`, 'calc(100% + 8px)');       // 下レール
+        addDiamond(diamondsLayer, `${xPct}%`, '-10px');                  // 上レール
+        addDiamond(diamondsLayer, `${xPct}%`, 'calc(100% + 10px)');     // 下レール
       }
-      // 短辺 (3個ずつ: 1/4, 2/4, 3/4)
+      // 短辺 (3個ずつ)
       for (let i = 1; i < 4; i++) {
         const yPct = (100 / 4) * i;
-        addDiamond(diamondsLayer, '-8px', `${yPct}%`);                    // 左レール
-        addDiamond(diamondsLayer, 'calc(100% + 8px)', `${yPct}%`);       // 右レール
+        addDiamond(diamondsLayer, '-10px', `${yPct}%`);                  // 左レール
+        addDiamond(diamondsLayer, 'calc(100% + 10px)', `${yPct}%`);     // 右レール
       }
     }
 
