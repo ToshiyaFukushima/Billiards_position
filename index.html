@@ -31,6 +31,7 @@
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      position: relative;
     }
 
     h1 {
@@ -202,71 +203,80 @@
     button { padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 4px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
 
-    /* 横画面時のスタイル：左右のスペースに各UIを移動 */
+    /* 横画面時のスタイル：台を画面最大にし、左右余白へUIを浮遊配置 */
     @media (orientation: landscape) {
       body {
-        flex-direction: row;
         justify-content: center;
         align-items: center;
-        gap: 8px;
         overflow: hidden;
-        padding: max(4px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
 
-      /* 横画面時はタイトルを非表示 */
       h1 { display: none; }
 
-      /* 左側：ボールラック */
+      /* 台（画面全体を基準に限界まで最大化） */
+      .wood-rail {
+        --avail-w: calc(100dvw - env(safe-area-inset-left) - env(safe-area-inset-right));
+        --avail-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        
+        width: min(var(--avail-w), calc(var(--avail-h) * (50 / 27)));
+        max-width: none;
+        margin: auto;
+        z-index: 1;
+      }
+
+      /* 左側の黒帯部分にボールラックを浮遊配置 */
       .rack-container {
-        order: 1;
-        width: 88px;
+        position: absolute;
+        left: max(6px, env(safe-area-inset-left));
+        top: 50%;
+        transform: translateY(-50%);
+        width: 76px;
         margin-top: 0;
         padding: 6px 4px;
+        background: rgba(34, 34, 34, 0.85);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 10;
         display: flex;
         flex-direction: column;
         align-items: center;
       }
       .rack-title { font-size: 0.6rem; margin-bottom: 4px; }
-      #ball-rack {
-        width: 100%;
-        gap: 4px;
-        justify-content: center;
-      }
-      .rack-ball { width: 24px; height: 24px; font-size: 0.65rem; }
+      #ball-rack { width: 100%; gap: 4px; justify-content: center; }
+      .rack-ball { width: 22px; height: 22px; font-size: 0.6rem; }
 
-      /* 中央：ビリヤード台 */
-      .wood-rail {
-        order: 2;
-        /* 左右パネル（約200px）と余白を除いた残りの幅・高さを基に最大化 */
-        --avail-w: calc(100dvw - 210px - env(safe-area-inset-left) - env(safe-area-inset-right));
-        --avail-h: calc(100dvh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-        
-        width: min(var(--avail-w), calc(var(--avail-h) * (50 / 27)));
-        max-width: none;
-        margin: 0;
-      }
-
-      /* 右側：設定パネル */
+      /* 右側の黒帯部分に設定パネルを浮遊配置 */
       .controls {
-        order: 3;
-        width: 110px;
+        position: absolute;
+        right: max(6px, env(safe-area-inset-right));
+        top: 50%;
+        transform: translateY(-50%);
+        width: 105px;
         margin-top: 0;
         flex-direction: column;
         align-items: stretch;
         gap: 6px;
+        background: rgba(34, 34, 34, 0.85);
+        backdrop-filter: blur(4px);
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #444;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 10;
       }
       .toggle-label {
-        font-size: 0.68rem;
-        padding: 4px 6px;
+        font-size: 0.65rem;
+        padding: 3px 5px;
         justify-content: space-between;
       }
       select {
-        font-size: 0.68rem;
+        font-size: 0.65rem;
         width: 100%;
       }
       button {
-        font-size: 0.68rem;
-        padding: 5px 6px;
+        font-size: 0.65rem;
+        padding: 4px 5px;
         width: 100%;
       }
     }
