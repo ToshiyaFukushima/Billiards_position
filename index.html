@@ -2,7 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- viewport-fit=cover を追加して全画面表示に対応 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>9ft Billiards Layout Editor</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
@@ -12,18 +13,22 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
+      overflow: hidden;
+      background: #121212;
     }
 
     body {
       font-family: sans-serif;
-      background: #121212;
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 6px;
+      /* dvhで正確な画面高さを取得 */
+      min-height: 100vh;
+      min-height: 100dvh;
+      /* スマホのノッチ・セーフエリア考慮 */
+      padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
     }
 
     h1 {
@@ -34,24 +39,24 @@
       flex-shrink: 0;
     }
 
-    /* 木目調レール（通常縦画面時） */
+    /* 木目調レール */
     .wood-rail {
-      /* 縦横比を保ちつつ画面内に収まる最大サイズ計算 */
-      width: min(94vw, calc((100vh - 130px) * 1.85));
+      /* 縦横比（2:1）を保ちつつ画面内に納まる最大の幅 */
+      width: min(94vw, calc((100dvh - 130px) * 1.85));
       max-width: 720px;
       background: #3e2312;
       background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
       border-radius: 10px;
-      padding: 4%; /* 木枠の厚み */
+      padding: 4%;
       position: relative;
       box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.9);
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0; /* 重なり防止 */
+      flex-shrink: 0;
     }
 
-    /* 実台規格：プレイエリア（ラシャ）のアスペクト比を正確に 2 : 1 に固定 */
+    /* プレイエリア（ラシャ）のアスペクト比を 2 : 1 に厳密固定 */
     #table-canvas {
       width: 100%;
       aspect-ratio: 2 / 1;
@@ -63,7 +68,6 @@
       touch-action: none;
     }
 
-    /* クッションの内側立体感 */
     .cushion-shadow {
       position: absolute;
       inset: 0;
@@ -73,7 +77,6 @@
       border-radius: 2px;
     }
 
-    /* 格子（グリッド） */
     .grid-overlay {
       position: absolute;
       inset: 0;
@@ -85,7 +88,6 @@
       z-index: 2;
     }
 
-    /* スポット (白点) */
     .table-spot {
       position: absolute;
       width: 5px;
@@ -100,7 +102,6 @@
     .head-spot { left: 25%; top: 50%; }
     .foot-spot { left: 75%; top: 50%; }
 
-    /* 木枠上の白い菱形ダイヤ */
     .diamond {
       position: absolute;
       width: 5px;
@@ -112,7 +113,6 @@
       pointer-events: none;
     }
 
-    /* ポケット (木枠内調整済み) */
     .pocket {
       position: absolute;
       background: #0a0a0a;
@@ -131,7 +131,6 @@
     .p-tc { top: -2.5%; left: 50%; }
     .p-bc { top: 102.5%; left: 50%; }
 
-    /* ボール */
     .ball {
       width: 5.5%; aspect-ratio: 1; border-radius: 50%; position: absolute;
       transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center;
@@ -148,7 +147,6 @@
       cursor: grabbing;
     }
 
-    /* ボール配色 */
     .b-0 { background: #ffffff; color: #000; }
     .b-1 { background: #f1c40f; color: #000; }
     .b-2 { background: #2980b9; color: #fff; }
@@ -160,23 +158,21 @@
     .b-8 { background: #111111; color: #fff; border: 1px solid #444; }
     .b-9 { background: repeating-linear-gradient(0deg, #f1c40f, #f1c40f 35%, #fff 35%, #fff 65%, #f1c40f 65%); color: #000; }
 
-    /* ラック */
     .rack-container {
       margin-top: 6px;
-      width: min(94vw, calc((100vh - 130px) * 1.85));
+      width: min(94vw, calc((100dvh - 130px) * 1.85));
       max-width: 720px;
       background: #222;
       border: 1px solid #444;
       border-radius: 6px;
       padding: 4px 8px;
       box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-      flex-shrink: 0; /* 重なり防止 */
+      flex-shrink: 0;
     }
     .rack-title { font-size: 0.72rem; color: #aaa; margin-bottom: 3px; text-align: center; }
     #ball-rack { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 28px; align-items: center; }
     .rack-ball { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.68rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
 
-    /* コントロール */
     .controls { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; flex-shrink: 0; }
     .toggle-label {
       display: flex;
@@ -204,25 +200,27 @@
     button { padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 4px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
 
-    /* 横画面（画面の高さが低くなる時）の専用レスポンシブ設定 */
+    /* 横画面時の最適化スタイル（上部黒帯の防止） */
     @media (orientation: landscape) or (max-height: 520px) {
-      body { padding: 4px; }
+      body {
+        justify-content: flex-start; /* 上詰めにして上部隙間を排除 */
+        padding-top: max(2px, env(safe-area-inset-top));
+      }
       h1 { font-size: 0.8rem; margin: 0 0 2px; }
 
-      /* 他パーツの要素を最小限に抑え、画面高さギリギリ最大のテーブルサイズを計算 */
       .wood-rail {
-        width: min(96vw, calc((100vh - 78px) * 1.85));
+        width: min(96vw, calc((100dvh - 72px) * 1.85));
       }
       .rack-container {
-        width: min(96vw, calc((100vh - 78px) * 1.85));
-        margin-top: 3px;
+        width: min(96vw, calc((100dvh - 72px) * 1.85));
+        margin-top: 2px;
         padding: 2px 6px;
       }
       .rack-title { font-size: 0.65rem; margin-bottom: 2px; }
       #ball-rack { min-height: 22px; gap: 4px; }
       .rack-ball { width: 22px; height: 22px; font-size: 0.6rem; }
       
-      .controls { margin-top: 3px; gap: 6px; }
+      .controls { margin-top: 2px; gap: 6px; }
       .toggle-label { padding: 2px 6px; font-size: 0.7rem; }
       select, button { padding: 2px 6px; font-size: 0.7rem; }
     }
@@ -232,19 +230,15 @@
 
   <h1>9ft Billiards Layout Editor</h1>
 
-  <!-- 木目調レール（テーブル本体） -->
   <div class="wood-rail" id="wood-rail">
-    <!-- ラシャ（プレイフィールド 2:1） -->
     <div id="table-canvas">
       <div id="diamonds-layer"></div>
       <div class="cushion-shadow"></div>
       <div class="grid-overlay" id="grid-overlay"></div>
       
-      <!-- ヘッドスポット & フットスポット -->
       <div class="table-spot head-spot"></div>
       <div class="table-spot foot-spot"></div>
 
-      <!-- ポケット -->
       <div class="pocket corner p-tl"></div>
       <div class="pocket side p-tc"></div>
       <div class="pocket corner p-tr"></div>
@@ -299,13 +293,11 @@
     function createDiamonds() {
       diamondsLayer.innerHTML = '';
 
-      // 長辺 (7個ずつ)
       for (let i = 1; i < 8; i++) {
         const xPct = (100 / 8) * i;
         addDiamond(diamondsLayer, `${xPct}%`, '-7px');
         addDiamond(diamondsLayer, `${xPct}%`, 'calc(100% + 7px)');
       }
-      // 短辺 (3個ずつ)
       for (let i = 1; i < 4; i++) {
         const yPct = (100 / 4) * i;
         addDiamond(diamondsLayer, '-7px', `${yPct}%`);
