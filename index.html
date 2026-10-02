@@ -2,33 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- viewport-fit=cover を追加して全画面表示に対応 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>9ft Billiards Layout Editor</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     
-    html, body {
+    html {
       width: 100%;
       height: 100%;
       margin: 0;
       padding: 0;
-      overflow: hidden;
       background: #121212;
     }
 
     body {
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+      background: #121212;
       font-family: sans-serif;
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      /* dvhで正確な画面高さを取得 */
-      min-height: 100vh;
-      min-height: 100dvh;
-      /* スマホのノッチ・セーフエリア考慮 */
-      padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+      /* はみ出た場合のみ縦スクロールを許可 */
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
     }
 
     h1 {
@@ -41,7 +44,6 @@
 
     /* 木目調レール */
     .wood-rail {
-      /* 縦横比（2:1）を保ちつつ画面内に納まる最大の幅 */
       width: min(94vw, calc((100dvh - 130px) * 1.85));
       max-width: 720px;
       background: #3e2312;
@@ -56,7 +58,7 @@
       flex-shrink: 0;
     }
 
-    /* プレイエリア（ラシャ）のアスペクト比を 2 : 1 に厳密固定 */
+    /* プレイエリア（ラシャ）のアスペクト比を 2 : 1 に固定 */
     #table-canvas {
       width: 100%;
       aspect-ratio: 2 / 1;
@@ -65,7 +67,7 @@
       box-shadow: inset 0 0 12px rgba(0,0,0,0.7);
       overflow: visible;
       border-radius: 2px;
-      touch-action: none;
+      touch-action: none; /* ボール操作中のページスクロールを防止 */
     }
 
     .cushion-shadow {
@@ -200,11 +202,11 @@
     button { padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 4px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
 
-    /* 横画面時の最適化スタイル（上部黒帯の防止） */
+    /* 横画面時の最適化スタイル */
     @media (orientation: landscape) or (max-height: 520px) {
       body {
-        justify-content: flex-start; /* 上詰めにして上部隙間を排除 */
-        padding-top: max(2px, env(safe-area-inset-top));
+        justify-content: flex-start;
+        padding-top: max(4px, env(safe-area-inset-top));
       }
       h1 { font-size: 0.8rem; margin: 0 0 2px; }
 
