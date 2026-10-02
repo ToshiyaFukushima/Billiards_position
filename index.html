@@ -203,7 +203,12 @@
     button { padding: 4px 10px; font-size: 0.75rem; border: none; border-radius: 4px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
     button:active { opacity: 0.8; }
 
-    /* 横画面時のスタイル：台を画面最大にし、左右余白へUIを浮遊配置 */
+    /* 横画面時の開閉（トグル）用ボタン（縦画面では非表示） */
+    .drawer-btn {
+      display: none;
+    }
+
+    /* 横画面時のスタイル：パネル類を非表示トグル化 */
     @media (orientation: landscape) {
       body {
         justify-content: center;
@@ -214,7 +219,7 @@
 
       h1 { display: none; }
 
-      /* 台（画面全体を基準に限界まで最大化） */
+      /* 台（画面全体限界まで最大化） */
       .wood-rail {
         --avail-w: calc(100dvw - env(safe-area-inset-left) - env(safe-area-inset-right));
         --avail-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -225,45 +230,84 @@
         z-index: 1;
       }
 
-      /* 左側の黒帯部分にボールラックを浮遊配置 */
-      .rack-container {
+      /* 横画面用トグルボタン */
+      .drawer-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         position: absolute;
-        left: max(6px, env(safe-area-inset-left));
         top: 50%;
         transform: translateY(-50%);
+        z-index: 30;
+        background: rgba(40, 40, 40, 0.85);
+        color: #fff;
+        border: 1px solid #666;
+        padding: 8px 6px;
+        font-size: 0.65rem;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        user-select: none;
+      }
+
+      #btn-toggle-rack {
+        left: max(4px, env(safe-area-inset-left));
+      }
+
+      #btn-toggle-controls {
+        right: max(4px, env(safe-area-inset-right));
+      }
+
+      /* 左スライドパネル（ボールラック） */
+      .rack-container {
+        position: absolute;
+        left: max(4px, env(safe-area-inset-left));
+        top: 50%;
+        transform: translateY(-50%) translateX(-130%);
+        transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
         width: 76px;
         margin-top: 0;
         padding: 6px 4px;
-        background: rgba(34, 34, 34, 0.85);
-        backdrop-filter: blur(4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        z-index: 10;
+        background: rgba(25, 25, 25, 0.92);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.7);
+        border: 1px solid #555;
+        z-index: 20;
         display: flex;
         flex-direction: column;
         align-items: center;
+      }
+      .rack-container.is-open {
+        transform: translateY(-50%) translateX(0);
       }
       .rack-title { font-size: 0.6rem; margin-bottom: 4px; }
       #ball-rack { width: 100%; gap: 4px; justify-content: center; }
       .rack-ball { width: 22px; height: 22px; font-size: 0.6rem; }
 
-      /* 右側の黒帯部分に設定パネルを浮遊配置 */
+      /* 右スライドパネル（設定操作） */
       .controls {
         position: absolute;
-        right: max(6px, env(safe-area-inset-right));
+        right: max(4px, env(safe-area-inset-right));
         top: 50%;
-        transform: translateY(-50%);
-        width: 105px;
+        transform: translateY(-50%) translateX(130%);
+        transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+        width: 110px;
         margin-top: 0;
         flex-direction: column;
         align-items: stretch;
         gap: 6px;
-        background: rgba(34, 34, 34, 0.85);
-        backdrop-filter: blur(4px);
-        padding: 6px;
+        background: rgba(25, 25, 25, 0.92);
+        backdrop-filter: blur(8px);
+        padding: 8px 6px;
         border-radius: 6px;
-        border: 1px solid #444;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        z-index: 10;
+        border: 1px solid #555;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.7);
+        z-index: 20;
+      }
+      .controls.is-open {
+        transform: translateY(-50%) translateX(0);
       }
       .toggle-label {
         font-size: 0.65rem;
@@ -286,6 +330,10 @@
 
   <h1>9ft Billiards Layout Editor</h1>
 
+  <!-- 横画面用開閉ボタン -->
+  <div class="drawer-btn" id="btn-toggle-rack" onclick="toggleRack()">ラック ❯</div>
+  <div class="drawer-btn" id="btn-toggle-controls" onclick="toggleControls()">❮ 設定</div>
+
   <div class="wood-rail" id="wood-rail">
     <div id="table-canvas">
       <div id="diamonds-layer"></div>
@@ -304,12 +352,12 @@
     </div>
   </div>
 
-  <div class="rack-container">
+  <div class="rack-container" id="rack-panel">
     <div class="rack-title">ボールラック</div>
     <div id="ball-rack"></div>
   </div>
 
-  <div class="controls">
+  <div class="controls" id="controls-panel">
     <label class="toggle-label">
       <input type="checkbox" id="snap-toggle" onchange="toggleSnap(this.checked)">
       <span>グリッド吸着</span>
@@ -332,6 +380,10 @@
     const diamondsLayer = document.getElementById('diamonds-layer');
     const gridOverlay = document.getElementById('grid-overlay');
     const ballRack = document.getElementById('ball-rack');
+    const rackPanel = document.getElementById('rack-panel');
+    const controlsPanel = document.getElementById('controls-panel');
+    const btnToggleRack = document.getElementById('btn-toggle-rack');
+    const btnToggleControls = document.getElementById('btn-toggle-controls');
     
     let activeBall = null;
     let isSnapEnabled = false;
@@ -345,6 +397,17 @@
       { id: 4, text: '4', class: 'b-4' }, { id: 5, text: '5', class: 'b-5' }, { id: 6, text: '6', class: 'b-6' }, { id: 7, text: '7', class: 'b-7' },
       { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
     ];
+
+    /* 横画面時のパネル開閉関数 */
+    function toggleRack() {
+      const isOpen = rackPanel.classList.toggle('is-open');
+      btnToggleRack.innerText = isOpen ? '❮ 閉じる' : 'ラック ❯';
+    }
+
+    function toggleControls() {
+      const isOpen = controlsPanel.classList.toggle('is-open');
+      btnToggleControls.innerText = isOpen ? '閉じる ❯' : '❮ 設定';
+    }
 
     function createDiamonds() {
       diamondsLayer.innerHTML = '';
