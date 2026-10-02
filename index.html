@@ -46,7 +46,7 @@
       background: #472b17;
       background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
       border-radius: 4px;
-      padding: 16px; /* クッションまでの木枠幅 */
+      padding: 16px;
       position: relative;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
       display: flex;
@@ -63,6 +63,7 @@
       box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
       overflow: hidden;
       border-radius: 2px;
+      touch-action: none; /* スマホでのスクロール干渉を完全防止 */
     }
 
     /* クッションの影 */
@@ -86,7 +87,7 @@
       z-index: 2;
     }
 
-    /* ヘッドスポット & フットスポット (白点) */
+    /* スポット (白点) */
     .table-spot {
       position: absolute;
       width: 5px;
@@ -134,9 +135,18 @@
       width: 5.5%; aspect-ratio: 1; border-radius: 50%; position: absolute;
       transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center;
       font-weight: bold; font-size: 0.75rem; user-select: none; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10;
-      transition: left 0.05s ease, top 0.05s ease;
+      touch-action: none;
+      will-change: left, top;
+      transition: left 0.1s ease-out, top 0.1s ease-out; /* 配置・吸着時の自然なアニメーション */
     }
-    .ball:active { cursor: grabbing; scale: 1.1; }
+
+    /* ドラッグ中は transition を即座に無効化して指にダイレクト追従 */
+    .ball.is-dragging {
+      transition: none !important;
+      scale: 1.15;
+      z-index: 100;
+      cursor: grabbing;
+    }
 
     /* ボール配色 */
     .b-0 { background: #ffffff; color: #000; }
@@ -189,25 +199,20 @@
 
   <h1>9ft Billiards Layout Editor</h1>
 
-  <!-- テーブル全体（金属外枠） -->
   <div class="table-container">
     <div class="metal-corner mc-tl"></div>
     <div class="metal-corner mc-tr"></div>
     <div class="metal-corner mc-bl"></div>
     <div class="metal-corner mc-br"></div>
 
-    <!-- 木目調レール -->
     <div class="wood-rail" id="wood-rail">
-      <!-- ラシャ（プレイフィールド） -->
       <div id="table-canvas">
         <div class="cushion-shadow"></div>
         <div class="grid-overlay" id="grid-overlay"></div>
         
-        <!-- ヘッドスポット & フットスポット -->
         <div class="table-spot head-spot"></div>
         <div class="table-spot foot-spot"></div>
 
-        <!-- 6つのポケット -->
         <div class="pocket corner p-tl"></div>
         <div class="pocket side p-tc"></div>
         <div class="pocket corner p-tr"></div>
@@ -251,20 +256,21 @@
     let isSnapEnabled = false;
     let gridStep = 0.5;
 
+    // パフォーマンス最適化用の変数
+    let rAFId = null;
+    let targetPos = { x: 0, y: 0, rawX: 0, rawY: 0 };
+
     const ballConfigs = [
       { id: 0, text: '手', class: 'b-0' }, { id: 1, text: '1', class: 'b-1' }, { id: 2, text: '2', class: 'b-2' }, { id: 3, text: '3', class: 'b-3' },
       { id: 4, text: '4', class: 'b-4' }, { id: 5, text: '5', class: 'b-5' }, { id: 6, text: '6', class: 'b-6' }, { id: 7, text: '7', class: 'b-7' },
       { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
     ];
 
-    // 木目レール上にダイヤ（ポイント）を正確に配置
     function createDiamonds() {
-      // 長辺 (7個ずつ)
       for (let i = 1; i < 8; i++) {
         addDiamond(woodRail, `calc(16px + (100% - 32px) * ${i} / 8)`, '8px');
         addDiamond(woodRail, `calc(16px + (100% - 32px) * ${i} / 8)`, 'calc(100% - 8px)');
       }
-      // 短辺 (3個ずつ)
       for (let i = 1; i < 4; i++) {
         addDiamond(woodRail, '8px', `calc(16px + (100% - 32px) * ${i} / 4)`);
         addDiamond(woodRail, 'calc(100% - 8px)', `calc(16px + (100% - 32px) * ${i} / 4)`);
@@ -307,8 +313,8 @@
 
     function resetToDefault() {
       document.querySelectorAll('#table-canvas .ball').forEach(b => b.remove());
-      spawnBallOnTable(0, 25, 50); // 手球（ヘッドスポット上）
-      spawnBallOnTable(1, 75, 50); // 1番球（フットスポット上）
+      spawnBallOnTable(0, 25, 50);
+      spawnBallOnTable(1, 75, 50);
       renderRack();
     }
 
@@ -351,30 +357,33 @@
       });
     }
 
+    // ドラッグ開始
     function startDrag(e) {
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       activeBall = e.target;
-      document.addEventListener('mousemove', drag);
+      activeBall.classList.add('is-dragging');
+
+      updatePosition(e);
+
+      document.addEventListener('mousemove', drag, { passive: false });
       document.addEventListener('touchmove', drag, { passive: false });
       document.addEventListener('mouseup', stopDrag);
       document.addEventListener('touchend', stopDrag);
+      document.addEventListener('touchcancel', stopDrag);
     }
 
-    function drag(e) {
+    // タッチ・マウス位置の計算
+    function updatePosition(e) {
       if (!activeBall) return;
       const rect = tableCanvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-      let x = ((clientX - rect.left) / rect.width) * 100;
-      let y = ((clientY - rect.top) / rect.height) * 100;
+      let rawX = ((clientX - rect.left) / rect.width) * 100;
+      let rawY = ((clientY - rect.top) / rect.height) * 100;
 
-      if (x < -8 || x > 108 || y < -12 || y > 112) {
-        activeBall.remove();
-        stopDrag();
-        renderRack();
-        return;
-      }
+      let x = rawX;
+      let y = rawY;
 
       if (isSnapEnabled) {
         const snapped = getSnappedPosition(x, y);
@@ -385,14 +394,54 @@
         y = Math.max(5, Math.min(95, y));
       }
 
-      activeBall.style.left = `${x}%`;
-      activeBall.style.top = `${y}%`;
+      targetPos = { x, y, rawX, rawY };
     }
 
+    // ドラッグ中（イベント発火時には座標保持と描画リクエストのみ実行）
+    function drag(e) {
+      if (!activeBall) return;
+      if (e.cancelable) e.preventDefault();
+
+      updatePosition(e);
+
+      // 枠外判定
+      if (targetPos.rawX < -8 || targetPos.rawX > 108 || targetPos.rawY < -12 || targetPos.rawY > 112) {
+        activeBall.remove();
+        stopDrag();
+        renderRack();
+        return;
+      }
+
+      // requestAnimationFrame で描画をフレームに同期
+      if (!rAFId) {
+        rAFId = requestAnimationFrame(renderBall);
+      }
+    }
+
+    // 実際のDOM更新処理（60fps/120fpsの同期タイミングで一度だけ実行）
+    function renderBall() {
+      if (activeBall) {
+        activeBall.style.left = `${targetPos.x}%`;
+        activeBall.style.top = `${targetPos.y}%`;
+      }
+      rAFId = null;
+    }
+
+    // ドラッグ終了
     function stopDrag() {
-      activeBall = null;
+      if (activeBall) {
+        activeBall.classList.remove('is-dragging');
+        activeBall = null;
+      }
+      if (rAFId) {
+        cancelAnimationFrame(rAFId);
+        rAFId = null;
+      }
       document.removeEventListener('mousemove', drag);
       document.removeEventListener('touchmove', drag);
+      document.removeEventListener('mouseup', stopDrag);
+      document.removeEventListener('touchend', stopDrag);
+      document.removeEventListener('touchcancel', stopDrag);
     }
 
     window.onload = init;
