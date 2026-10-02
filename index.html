@@ -6,6 +6,457 @@
   <title>9ft Billiards Layout Editor</title>
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #121212;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    h1 { font-size: 1.1rem; margin: 4px 0 8px; color: #ddd; text-align: center; }
+
+    /* 木目調レール（横画面でも高さ55vhを超えない可変設計） */
+    .wood-rail {
+      width: min(92vw, calc(55vh * 2.1));
+      max-width: 720px;
+      aspect-ratio: 2.1 / 1.1;
+      background: #3e2312;
+      background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
+      border-radius: 10px;
+      padding: 5.5%; /* 木枠の厚みをレスポンシブなパーセンテージに変更 */
+      position: relative;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* テーブル内側（ラシャ：エメラルドグリーン） */
+    #table-canvas {
+      width: 100%;
+      height: 100%;
+      background: #009a7b;
+      position: relative;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.7);
+      overflow: visible;
+      border-radius: 2px;
+      touch-action: none;
+    }
+
+    /* クッションの内側立体感 */
+    .cushion-shadow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+      z-index: 3;
+      border-radius: 2px;
+    }
+
+    /* 格子（グリッド） */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-size: calc(100% / 16) calc(100% / 8);
+      background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.18) 1px, transparent 1px);
+      z-index: 2;
+    }
+
+    /* スポット (白点) */
+    .table-spot {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #ffffff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 2px rgba(0,0,0,0.6);
+      pointer-events: none;
+      z-index: 3;
+    }
+    .head-spot { left: 25%; top: 50%; }
+    .foot-spot { left: 75%; top: 50%; }
+
+    /* 木枠上の白い菱形ダイヤ */
+    .diamond {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #ffffff;
+      transform: translate(-50%, -50%) rotate(45deg);
+      box-shadow: 0 0 2px rgba(0,0,0,0.8);
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    /* ポケット (木枠の範囲内にぴったり納まる座標調整) */
+    .pocket {
+      position: absolute;
+      background: #0a0a0a;
+      border-radius: 50%;
+      box-shadow: inset 0 0 8px #000000, 0 0 3px rgba(0,0,0,0.8);
+      z-index: 1;
+      transform: translate(-50%, -50%);
+    }
+    .pocket.corner { width: 8.5%; aspect-ratio: 1; }
+    .pocket.side { width: 7.5%; aspect-ratio: 1; }
+
+    /* 木枠の中に収まる安全なオフセット設定 */
+    .p-tl { top: -1%; left: -1%; }
+    .p-tr { top: -1%; left: 101%; }
+    .p-bl { top: 101%; left: -1%; }
+    .p-br { top: 101%; left: 101%; }
+    .p-tc { top: -2.5%; left: 50%; }
+    .p-bc { top: 102.5%; left: 50%; }
+
+    /* ボール */
+    .ball {
+      width: 5.5%; aspect-ratio: 1; border-radius: 50%; position: absolute;
+      transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.7rem; user-select: none; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); z-index: 10;
+      touch-action: none;
+      will-change: left, top;
+      transition: left 0.1s ease-out, top 0.1s ease-out;
+    }
+
+    .ball.is-dragging {
+      transition: none !important;
+      scale: 1.15;
+      z-index: 100;
+      cursor: grabbing;
+    }
+
+    /* ボール配色 */
+    .b-0 { background: #ffffff; color: #000; }
+    .b-1 { background: #f1c40f; color: #000; }
+    .b-2 { background: #2980b9; color: #fff; }
+    .b-3 { background: #e74c3c; color: #fff; }
+    .b-4 { background: #8e44ad; color: #fff; }
+    .b-5 { background: #e67e22; color: #fff; }
+    .b-6 { background: #27ae60; color: #fff; }
+    .b-7 { background: #7f8c8d; color: #fff; }
+    .b-8 { background: #111111; color: #fff; border: 1px solid #444; }
+    .b-9 { background: repeating-linear-gradient(0deg, #f1c40f, #f1c40f 35%, #fff 35%, #fff 65%, #f1c40f 65%); color: #000; }
+
+    /* ラック */
+    .rack-container {
+      margin-top: 10px;
+      width: min(92vw, calc(55vh * 2.1));
+      max-width: 720px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 6px 10px;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+    .rack-title { font-size: 0.75rem; color: #aaa; margin-bottom: 6px; text-align: center; }
+    #ball-rack { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 32px; align-items: center; }
+    .rack-ball { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.7rem; cursor: pointer; box-shadow: 1px 1px 3px rgba(0,0,0,0.4); user-select: none; }
+
+    /* コントロール */
+    .controls { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; flex-shrink: 0; }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-label input { accent-color: #27ae60; width: 14px; height: 14px; cursor: pointer; }
+    select {
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      outline: none;
+    }
+    button { padding: 6px 12px; font-size: 0.8rem; border: none; border-radius: 5px; background: #c0392b; color: white; cursor: pointer; font-weight: bold; }
+    button:active { opacity: 0.8; }
+
+    /* 横画面・画面の高さが極小のときの省スペース調整 */
+    @media (max-height: 500px) {
+      h1 { font-size: 0.9rem; margin: 2px 0; }
+      .rack-container { margin-top: 6px; padding: 4px; }
+      .controls { margin-top: 6px; gap: 6px; }
+      .rack-ball { width: 24px; height: 24px; font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>9ft Billiards Layout Editor</h1>
+
+  <!-- 木目調レール（テーブル本体） -->
+  <div class="wood-rail" id="wood-rail">
+    <!-- ラシャ（プレイフィールド） -->
+    <div id="table-canvas">
+      <div id="diamonds-layer"></div>
+      <div class="cushion-shadow"></div>
+      <div class="grid-overlay" id="grid-overlay"></div>
+      
+      <!-- ヘッドスポット & フットスポット -->
+      <div class="table-spot head-spot"></div>
+      <div class="table-spot foot-spot"></div>
+
+      <!-- ポケット (木枠内調整済み) -->
+      <div class="pocket corner p-tl"></div>
+      <div class="pocket side p-tc"></div>
+      <div class="pocket corner p-tr"></div>
+      <div class="pocket corner p-bl"></div>
+      <div class="pocket side p-bc"></div>
+      <div class="pocket corner p-br"></div>
+    </div>
+  </div>
+
+  <div class="rack-container">
+    <div class="rack-title">ボールラック（タップで配置 / 枠外ドラッグで戻す）</div>
+    <div id="ball-rack"></div>
+  </div>
+
+  <div class="controls">
+    <label class="toggle-label">
+      <input type="checkbox" id="snap-toggle" onchange="toggleSnap(this.checked)">
+      <span>グリッド吸着</span>
+    </label>
+
+    <label class="toggle-label">
+      <span>精度:</span>
+      <select id="grid-density" onchange="updateGridDensity(this.value)">
+        <option value="1">1ダイヤ (8×4)</option>
+        <option value="0.5" selected>0.5ダイヤ (16×8)</option>
+        <option value="0.25">0.25ダイヤ (32×16)</option>
+      </select>
+    </label>
+
+    <button onclick="resetToDefault()">初期配置に戻す</button>
+  </div>
+
+  <script>
+    const tableCanvas = document.getElementById('table-canvas');
+    const diamondsLayer = document.getElementById('diamonds-layer');
+    const gridOverlay = document.getElementById('grid-overlay');
+    const ballRack = document.getElementById('ball-rack');
+    
+    let activeBall = null;
+    let isSnapEnabled = false;
+    let gridStep = 0.5;
+
+    let rAFId = null;
+    let targetPos = { x: 0, y: 0, rawX: 0, rawY: 0 };
+
+    const ballConfigs = [
+      { id: 0, text: '手', class: 'b-0' }, { id: 1, text: '1', class: 'b-1' }, { id: 2, text: '2', class: 'b-2' }, { id: 3, text: '3', class: 'b-3' },
+      { id: 4, text: '4', class: 'b-4' }, { id: 5, text: '5', class: 'b-5' }, { id: 6, text: '6', class: 'b-6' }, { id: 7, text: '7', class: 'b-7' },
+      { id: 8, text: '8', class: 'b-8' }, { id: 9, text: '9', class: 'b-9' }
+    ];
+
+    function createDiamonds() {
+      diamondsLayer.innerHTML = '';
+
+      // 長辺 (7個ずつ)
+      for (let i = 1; i < 8; i++) {
+        const xPct = (100 / 8) * i;
+        addDiamond(diamondsLayer, `${xPct}%`, '-8px');
+        addDiamond(diamondsLayer, `${xPct}%`, 'calc(100% + 8px)');
+      }
+      // 短辺 (3個ずつ)
+      for (let i = 1; i < 4; i++) {
+        const yPct = (100 / 4) * i;
+        addDiamond(diamondsLayer, '-8px', `${yPct}%`);
+        addDiamond(diamondsLayer, 'calc(100% + 8px)', `${yPct}%`);
+      }
+    }
+
+    function addDiamond(container, x, y) {
+      const diamond = document.createElement('div');
+      diamond.className = 'diamond';
+      diamond.style.left = x;
+      diamond.style.top = y;
+      container.appendChild(diamond);
+    }
+
+    function toggleSnap(enabled) { isSnapEnabled = enabled; }
+
+    function updateGridDensity(value) {
+      gridStep = parseFloat(value);
+      const cols = 8 / gridStep;
+      const rows = 4 / gridStep;
+      gridOverlay.style.backgroundSize = `calc(100% / ${cols}) calc(100% / ${rows})`;
+    }
+
+    function getSnappedPosition(x, y) {
+      const cols = 8 / gridStep;
+      const rows = 4 / gridStep;
+      const stepX = 100 / cols;
+      const stepY = 100 / rows;
+      return {
+        x: Math.round(x / stepX) * stepX,
+        y: Math.round(y / stepY) * stepY
+      };
+    }
+
+    function init() {
+      createDiamonds();
+      updateGridDensity(document.getElementById('grid-density').value);
+      resetToDefault();
+    }
+
+    function resetToDefault() {
+      document.querySelectorAll('#table-canvas .ball').forEach(b => b.remove());
+      spawnBallOnTable(0, 25, 50);
+      spawnBallOnTable(1, 75, 50);
+      renderRack();
+    }
+
+    function spawnBallOnTable(id, xPercent, yPercent) {
+      let ball = document.getElementById(`ball-${id}`);
+      if (!ball) {
+        const conf = ballConfigs.find(b => b.id === id);
+        ball = document.createElement('div');
+        ball.id = `ball-${id}`;
+        ball.className = `ball ${conf.class}`;
+        ball.innerText = conf.text;
+        ball.dataset.id = id;
+        ball.addEventListener('mousedown', startDrag);
+        ball.addEventListener('touchstart', startDrag, { passive: false });
+      }
+
+      if (isSnapEnabled) {
+        const snapped = getSnappedPosition(xPercent, yPercent);
+        xPercent = snapped.x;
+        yPercent = snapped.y;
+      }
+
+      ball.style.left = `${xPercent}%`;
+      ball.style.top = `${yPercent}%`;
+      tableCanvas.appendChild(ball);
+      renderRack();
+    }
+
+    function renderRack() {
+      ballRack.innerHTML = '';
+      ballConfigs.forEach(conf => {
+        const isOnTable = document.getElementById(`ball-${conf.id}`);
+        if (!isOnTable) {
+          const rackBall = document.createElement('div');
+          rackBall.className = `rack-ball ${conf.class}`;
+          rackBall.innerText = conf.text;
+          rackBall.onclick = () => spawnBallOnTable(conf.id, 50, 50);
+          ballRack.appendChild(rackBall);
+        }
+      });
+    }
+
+    function startDrag(e) {
+      if (e.cancelable) e.preventDefault();
+      activeBall = e.target;
+      activeBall.classList.add('is-dragging');
+
+      updatePosition(e);
+
+      document.addEventListener('mousemove', drag, { passive: false });
+      document.addEventListener('touchmove', drag, { passive: false });
+      document.addEventListener('mouseup', stopDrag);
+      document.addEventListener('touchend', stopDrag);
+      document.addEventListener('touchcancel', stopDrag);
+    }
+
+    function updatePosition(e) {
+      if (!activeBall) return;
+      const rect = tableCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      let rawX = ((clientX - rect.left) / rect.width) * 100;
+      let rawY = ((clientY - rect.top) / rect.height) * 100;
+
+      let x = rawX;
+      let y = rawY;
+
+      if (isSnapEnabled) {
+        const snapped = getSnappedPosition(x, y);
+        x = snapped.x;
+        y = snapped.y;
+      } else {
+        x = Math.max(3, Math.min(97, x));
+        y = Math.max(5, Math.min(95, y));
+      }
+
+      targetPos = { x, y, rawX, rawY };
+    }
+
+    function drag(e) {
+      if (!activeBall) return;
+      if (e.cancelable) e.preventDefault();
+
+      updatePosition(e);
+
+      if (targetPos.rawX < -8 || targetPos.rawX > 108 || targetPos.rawY < -12 || targetPos.rawY > 112) {
+        activeBall.remove();
+        stopDrag();
+        renderRack();
+        return;
+      }
+
+      if (!rAFId) {
+        rAFId = requestAnimationFrame(renderBall);
+      }
+    }
+
+    function renderBall() {
+      if (activeBall) {
+        activeBall.style.left = `${targetPos.x}%`;
+        activeBall.style.top = `${targetPos.y}%`;
+      }
+      rAFId = null;
+    }
+
+    function stopDrag() {
+      if (activeBall) {
+        activeBall.classList.remove('is-dragging');
+        activeBall = null;
+      }
+      if (rAFId) {
+        cancelAnimationFrame(rAFId);
+        rAFId = null;
+      }
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('touchmove', drag);
+      document.removeEventListener('mouseup', stopDrag);
+      document.removeEventListener('touchend', stopDrag);
+      document.removeEventListener('touchcancel', stopDrag);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>9ft Billiards Layout Editor</title>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
     h1 { font-size: 1.1rem; margin: 5px 0 10px; color: #ddd; }
 
